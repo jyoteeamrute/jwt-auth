@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
@@ -39,6 +41,44 @@ class LoginUserSerializer(serializers.Serializer):
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Invalid email or password")    
+
+
+
+User = get_user_model()
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User with this email does not exist")
+        return value
+
+    def create_reset_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        return str(refresh.access_token)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=6, write_only=True)
+
+    def validate(self, data):
+        try:
+            from rest_framework_simplejwt.tokens import AccessToken
+            payload = AccessToken(data['token'])
+            user_id = payload['user_id']
+            user = User.objects.get(id=user_id)
+            data['user'] = user
+        except Exception as e:
+            raise serializers.ValidationError("Invalid or expired token")
+        return data
+
+    def save(self):
+        user = self.validated_data['user']
+        user.set_password(self.validated_data['password'])
+        user.save()
+    
 # class UserRegistrationSerializer(serializers.ModelSerializer):
     # author = UserSerializer(read_only=True)
 #     comments_count = serializers.SerializerMethodField()
