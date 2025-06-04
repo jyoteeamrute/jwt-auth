@@ -1,3 +1,12 @@
 venv
 /venv
 
+# Django migrations
+*/migrations/*
+!*/migrations/__init__.py
+
+# Database
+*.sqlite3
+
+# Virtual environment
+venv/
