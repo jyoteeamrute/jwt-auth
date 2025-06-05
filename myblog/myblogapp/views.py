@@ -55,4 +55,62 @@ class UserDetailView(APIView):
         user = request.user
         user.delete()
         return Response({'detail': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+class RegisterBlogView(ApiView):
+    def get(self,request):
+        blog = Blog.objects.all()
+        ser=BlogPostSerializer(blog,many=True,)
+        return Response (ser.data)
+      
+from rest_framework import generics, permissions
+
+
+class BlogPostListCreateView(generics.ListCreateAPIView):
+    queryset = MyBlogPost.objects.all()
+    serializer_class = BlogPostSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+class BlogPostRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = MyBlogPost.objects.all()
+    serializer_class = BlogPostSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class CommentCreateView(generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class PostCommentsListView(generics.ListAPIView):
+    serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        post_id = self.kwargs['post_id']
+        return Comment.objects.filter(post_id=post_id)
+
+class LikeCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = MyBlogPost.objects.get(id=post_id)
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
+        if not created:
+            return Response({'message': 'Already liked'}, status=400)
+        return Response({'message': 'Liked'}, status=201)
+
+    def delete(self, request, post_id):
+        Like.objects.filter(user=request.user, post_id=post_id).delete()
+        return Response({'message': 'Unliked'}, status=204)
+
+class PostLikesListView(generics.ListAPIView):
+    serializer_class = LikeSerializer
+
+    def get_queryset(self):
+        post_id = self.kwargs['post_id']
+        return Like.objects.filter(post_id=post_id)
       

@@ -39,30 +39,35 @@ class LoginUserSerializer(serializers.Serializer):
         if user and user.is_active:
             return user
         raise serializers.ValidationError("Invalid email or password")    
-# class UserRegistrationSerializer(serializers.ModelSerializer):
-    # author = UserSerializer(read_only=True)
-#     comments_count = serializers.SerializerMethodField()
-#     likes_count = serializers.SerializerMethodField()
+class BlogPostSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    comments_count = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
 
-#     class Meta:
-#         model = MyBlogPost
-#         fields = ['id', 'title', 'content', 'author', 'created_at', 'updated_at', 'comments_count', 'likes_count']
+    class Meta:
+        model = MyBlogPost
+        fields = ['id', 'title', 'content', 'author', 'created_at', 'updated_at', 'comments_count', 'likes_count']
 
-#     def get_comments_count(self, obj):
-#         return obj.comments.count()
+    def get_comments_count(self, obj):
+        return obj.comments.count()
 
-#     def get_likes_count(self, obj):
-#         return obj.likes.count()
+    def get_likes_count(self, obj):
+        return obj.likes.count()
 
-# class CommentSerializer(serializers.ModelSerializer):
-#     user = UserSerializer(read_only=True)
+class BlogPostcreateSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.email')
+    class Meta:
+        model = MyBlogPost
+        fields = '__all__'
 
-#     class Meta:
-#         model = Comment
-#         fields = ['id', 'post', 'user', 'text', 'created_at']
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.email')
+    class Meta:
+        model = Comment
+        fields = '__all__'
 
-# class LikeSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Like
-#         fields = ['id', 'post', 'user', 'created_at']
-            
+class LikeSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.email')
+    class Meta:
+        model = Like
+        fields = '__all__'
